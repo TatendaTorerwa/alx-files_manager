@@ -79,20 +79,26 @@ class UsersController {
    * status code 401
    * Otherwise, return the user object (email and id only)
    */
+  
   static async getMe(request, response) {
-    const { userId } = await userUtils.getUserIdAndKey(request);
+    try {
+      const { userId } = await userUtils.getUserIdAndKey(request);
 
-    const user = await userUtils.getUser({
-      _id: ObjectId(userId),
-    });
+      const user = await userUtils.getUser({
+        _id: ObjectId(userId),
+      });
 
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+      if (!user) {
+        return response.status(401).json({ error: 'Unauthorized' });
+      }
 
-    const processedUser = { id: user._id, ...user };
-    delete processedUser._id;
-    delete processedUser.password;
+      const { _id, password, ...processedUser } = user; // Omit password and _id from the response
 
-    return response.status(200).send(processedUser);
+      return response.status(200).json(processedUser);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return response.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 }
 
