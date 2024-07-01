@@ -43,7 +43,7 @@ class UsersController {
       // Check if email already exists
       const emailExists = await dbClient.usersCollection().findOne({ email });
       if (emailExists) {
-        return response.status(400).json({ error: 'Email already exists' });
+        return response.status(400).json({ error: 'Already exists' });
       }
 
       // Hash the password (replace with bcrypt or Argon2 for better security)
@@ -54,6 +54,8 @@ class UsersController {
         email,
         password: hashedPassword,
       });
+
+      console.log('Insert successful:', result.insertedId);	    
 
       // Return the newly created user's email and ID
       const user = {
