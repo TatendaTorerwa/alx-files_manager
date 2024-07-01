@@ -55,7 +55,6 @@ class UsersController {
         password: hashedPassword,
       });
 
-      console.log('Insert successful:', result.insertedId);	    
 
       // Return the newly created user's email and ID
       const user = {
