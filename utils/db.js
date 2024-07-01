@@ -7,10 +7,8 @@ import envLoader from './env_loader';
  * Represents a MongoDB client.
  */
 
+
 class DBClient {
-  /**
-   * Creates a new DBClient instance.
-   */
   constructor() {
     envLoader();
     const host = process.env.DB_HOST || 'localhost';
@@ -39,10 +37,15 @@ class DBClient {
     return this.client.isConnected();
   }
 
+  // Method to get users collection
+  usersCollection() {
+    const db = this.client.db();
+    return db.collection('users');
+  }
+
   async nbUsers() {
     try {
-      const db = this.client.db();
-      const userCollection = db.collection('users');
+      const userCollection = this.usersCollection();
       return userCollection.countDocuments();
     } catch (error) {
       console.error('Error retrieving user count:', error);
@@ -64,3 +67,4 @@ class DBClient {
 
 const dbClient = new DBClient();
 export default dbClient;
+

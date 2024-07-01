@@ -24,65 +24,46 @@ class UsersController {
    * email: same as the value received
    * password: SHA1 value of the value received
    */
+
   static async postNew(request, response) {
     const { email, password } = request.body;
 
-    if (!email) return response.status(400).send({ error: 'Missing email' });
-
-    if (!password) { return response.status(400).send({ error: 'Missing password' }); }
-
-    const emailExists = await dbClient.usersCollection.findOne({ email });
-
-    if (emailExists) { return response.status(400).send({ error: 'Already exist' }); }
-
-    const sha1Password = sha1(password);
-
-    let result;
-    try {
-      result = await dbClient.usersCollection.insertOne({
-        email,
-        password: sha1Password,
-      });
-    } catch (err) {
-      await userQueue.add({});
-      return response.status(500).send({ error: 'Error creating user.' });
+    // Check if email or password is missing
+    if (!email) {
+      return response.status(400).json({ error: 'Missing email' });
     }
 
-    const user = {
-      id: result.insertedId,
-      email,
-    };
+    if (!password) {
+      return response.status(400).json({ error: 'Missing password' });
+    }
 
-    await userQueue.add({
-      userId: result.insertedId.toString(),
-    });
+    try {
+      // Check if email already exists
+      const emailExists = await dbClient.usersCollection().findOne({ email });
+      if (emailExists) {
+        return response.status(400).json({ error: 'Email already exists' });
+      }
 
-    return response.status(201).send(user);
-  }
+      // Hash the password (replace with bcrypt or Argon2 for better security)
+      const hashedPassword = sha1(password); // Replace with more secure hashing
 
-  /**
-   *
-   * Should retrieve the user base on the token used
-   *
-   * Retrieve the user based on the token:
-   * If not found, return an error Unauthorized with a
-   * status code 401
-   * Otherwise, return the user object (email and id only)
-   */
-  static async getMe(request, response) {
-    const { userId } = await userUtils.getUserIdAndKey(request);
+      // Insert the new user into the database
+      const result = await dbClient.usersCollection().insertOne({
+        email,
+        password: hashedPassword,
+      });
 
-    const user = await userUtils.getUser({
-      _id: ObjectId(userId),
-    });
+      // Return the newly created user's email and ID
+      const user = {
+        id: result.insertedId,
+        email,
+      };
 
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
-
-    const processedUser = { id: user._id, ...user };
-    delete processedUser._id;
-    delete processedUser.password;
-
-    return response.status(200).send(processedUser);
+      return response.status(201).json(user);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return response.status(500).json({ error: 'Error creating user' });
+    }
   }
 }
 
